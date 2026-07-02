@@ -1,0 +1,18 @@
+# Example Cloudflare Tunnel config (for a locally-installed cloudflared, not the
+# token-based sidecar). Copy to config.yml, fill in your tunnel UUID, and run:
+#   cloudflared tunnel run
+#
+# DNS: create a CNAME `lm-mcp` → <TUNNEL_UUID>.cfargotunnel.com (proxied).
+
+tunnel: <TUNNEL_UUID>
+credentials-file: /etc/cloudflared/<TUNNEL_UUID>.json
+
+ingress:
+  - hostname: lm-mcp.website.com
+    service: http://localhost:8930
+    originRequest:
+      # MCP responses can stream; don't let the edge buffer or time out early.
+      disableChunkedEncoding: false
+      connectTimeout: 30s
+  # Everything else → 404
+  - service: http_status:404
