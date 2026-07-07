@@ -8,7 +8,7 @@ already exist.
 
 ```
 Claude Cowork ──HTTPS (bearer)──▶ lm-mcp ──HTTP (service token)──▶ Liquid-Mind-CRM API
-   (connector)                    (this)                            (truth ledger + Action_Queue)
+   (connector)                    (this)                            (truth ledger + AI_Action_Queue)
 ```
 
 ## Scope (v1)
@@ -16,7 +16,7 @@ Claude Cowork ──HTTPS (bearer)──▶ lm-mcp ──HTTP (service token)─
 - **READ tools** — pull from the truth ledger via the CRM API. No side effects.
   - `list_clients`, `resolve_client`, `get_series_performance`,
     `get_campaign_performance`, `list_tasks`, `run_ad_review`
-- **PROPOSE tools** — write a row to the CRM `Action_Queue` (`status = 'proposed'`).
+- **PROPOSE tools** — write a row to the CRM `AI_Action_Queue` (`status = 'proposed'`).
   They never touch a campaign.
   - `propose_bid_change`, `propose_budget_shift`, `propose_audience_rebuild`,
     `propose_campaign_state`, `propose_new_campaign`
@@ -103,7 +103,7 @@ in `Liquid-Mind-CRM`:
    non-interactive service identity (a long-lived service JWT, or a dedicated
    middleware branch) with a role that permits the READ routes and the actions route.
 
-2. **The Action_Queue endpoint + table.** The PROPOSE tools `POST /api/actions`
+2. **The AI_Action_Queue endpoint + table.** The PROPOSE tools `POST /api/actions`
    with this envelope:
 
    ```json
@@ -124,7 +124,7 @@ in `Liquid-Mind-CRM`:
    The endpoint should insert a row in `status = 'proposed'` and return the created
    row (including its `actionId`). The approve/deny UI and the atomic
    approved-only execution gate live on the CRM side. (Ask Claude for the
-   `Action_Queue` migration + routes — designed but not yet added.)
+   `AI_Action_Queue` migration + routes — designed but not yet added.)
 
 Until #2 exists, the READ tools work fully and the PROPOSE tools will return a
 clear error from the CRM (404) — which is the expected state before the queue is
@@ -142,7 +142,7 @@ built.
 ## Roadmap
 
 - **EXECUTE phase:** add `apply_approved_action(actionId)` — looks up an APPROVED
-  `Action_Queue` row, routes to the matching WebPages tool via `webToolsClient`
+  `AI_Action_Queue` row, routes to the matching WebPages tool via `webToolsClient`
   (or enqueues the existing Redis worker job), writes back the result. Refuses
   anything not in `approved` state.
 - **Surface C:** wrap the AMS_Automation scripts (e.g. `pnl_sheet_filler.py`)

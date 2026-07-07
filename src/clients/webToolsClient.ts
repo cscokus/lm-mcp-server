@@ -7,7 +7,7 @@ import { config } from "../config.js";
  * Audience Tool, etc.). Those endpoints are form-POST + session/Bearer shaped, so
  * this speaks x-www-form-urlencoded. NOTHING in v1 calls this — v1 is READ +
  * PROPOSE only. When you wire `apply_approved_action`, its handler will look up an
- * APPROVED Action_Queue row and route here. See README "Roadmap".
+ * APPROVED AI_Action_Queue row and route here. See README "Roadmap".
  */
 export const webTools = {
   baseUrl: config.webTools.baseUrl,

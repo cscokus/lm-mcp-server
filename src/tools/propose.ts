@@ -4,12 +4,12 @@ import { crm } from "../clients/crmClient.js";
 import { ok, fail } from "./util.js";
 
 /**
- * PROPOSE tools — write a row to the CRM Action_Queue. They NEVER touch a campaign.
+ * PROPOSE tools — write a row to the CRM AI_Action_Queue. They NEVER touch a campaign.
  *
  * Every tool here POSTs to `POST /api/actions` on the CRM, which inserts a row in
  * `status = 'proposed'`. A human approves/denies it in the WebPages UI; only the
  * (future) `apply_approved_action` tool executes an APPROVED row. See the README
- * "CRM-side contract" — this endpoint + the Action_Queue table must exist CRM-side.
+ * "CRM-side contract" — this endpoint + the AI_Action_Queue table must exist CRM-side.
  */
 
 const PLATFORM = z.enum(["AMS", "AMG", "DSP", "FB"]);

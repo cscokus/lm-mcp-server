@@ -8,10 +8,10 @@ services:
     # firewall the port to Cloudflare IP ranges.
     ports:
       - "127.0.0.1:8930:8930"
-    # When co-located with the CRM/WebPages compose stack, join their network and
-    # set CRM_BASE_URL to the CRM service name (e.g. http://liquid-mind-crm:3000).
-    # networks:
-    #   - lm
+    # Join the CRM's Docker network so the READ/PROPOSE tools can reach the CRM
+    # API by service name. Set CRM_BASE_URL=http://backend:3000 in .env.
+    networks:
+      - crm
 
   # Optional: run the Cloudflare Tunnel as a sidecar so the origin needs no open
   # inbound ports. Create the tunnel + token in the Cloudflare Zero Trust dashboard
@@ -26,6 +26,10 @@ services:
   #   depends_on:
   #     - lm-mcp
 
-# networks:
-#   lm:
-#     external: true
+networks:
+  crm:
+    external: true
+    # The network the Liquid-Mind-CRM stack created. Compose names it
+    # "<project>_default" — usually "liquid-mind-crm_default". VERIFY on the
+    # droplet with `docker network ls` and change the name below if it differs.
+    name: liquid-mind-crm_default
