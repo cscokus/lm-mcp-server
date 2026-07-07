@@ -121,6 +121,78 @@ export function registerReadTools(server: McpServer): void {
   );
 
   server.registerTool(
+    "describe_schema",
+    {
+      title: "Describe the Amazon_Ads_DB schema",
+      description:
+        "Call this BEFORE composing any SQL with run_db_query. With no arguments it returns the curated schema guide: what every table means, canonical join paths (client→series→campaigns, Client_ASINs→SP_Product_Ad_Performance_Data, etc.), and gotchas (attribution windows, DSP totalCost vs cost, collations). With a table name it returns that table's live column list and indexes from information_schema.",
+      inputSchema: {
+        table: z
+          .string()
+          .regex(/^[A-Za-z0-9_]{1,64}$/)
+          .optional()
+          .describe("Exact table name for live column/index details; omit for the full guide"),
+      },
+    },
+    async ({ table }) => {
+      try {
+        return ok(await crm.get("/api/db/schema", { table }));
+      } catch (err) {
+        return fail((err as Error).message);
+      }
+    },
+  );
+
+  server.registerTool(
+    "run_db_query",
+    {
+      title: "Run a read-only SQL query",
+      description:
+        "Execute a single SELECT (or WITH...SELECT) against Amazon_Ads_DB for questions no dedicated tool covers. Read the schema guide (describe_schema) first and follow its documented join paths. Results are LIMIT-capped (default 100, max 500) — aggregate in SQL rather than fetching raw rows. If the query errors, the MySQL message is returned so you can correct and retry.",
+      inputSchema: {
+        sql: z.string().describe("One SELECT statement. No writes, no multiple statements."),
+        limit: z.number().int().min(1).max(500).optional().describe("Row cap if the query has no LIMIT (default 100)"),
+      },
+    },
+    async ({ sql, limit }) => {
+      try {
+        return ok(await crm.post("/api/db/query", { sql, limit }));
+      } catch (err) {
+        return fail((err as Error).message);
+      }
+    },
+  );
+
+  server.registerTool(
+    "get_asin_performance",
+    {
+      title: "Get SP performance for specific book ASINs",
+      description:
+        "Canonical per-ASIN Sponsored Products performance (spend, sales14d, purchases, KENP reads/royalties) from SP_Product_Ad_Performance_Data. Use this instead of hand-writing the query so numbers are consistent. To find a client's ASINs first, query Client_ASINs (via run_db_query) or ask the user.",
+      inputSchema: {
+        asins: z.array(z.string().regex(/^[A-Z0-9]{10}$/)).min(1).max(50).describe("Book ASINs"),
+        dateStart: z.string().optional().describe("YYYY-MM-DD (default 30 days ago)"),
+        dateEnd: z.string().optional().describe("YYYY-MM-DD (default today)"),
+        groupBy: z.enum(["asin", "day"]).optional().describe("asin (totals, default) or day (daily rows)"),
+      },
+    },
+    async ({ asins, dateStart, dateEnd, groupBy }) => {
+      try {
+        return ok(
+          await crm.get("/api/db/asin-performance", {
+            asins: asins.join(","),
+            dateStart,
+            dateEnd,
+            groupBy,
+          }),
+        );
+      } catch (err) {
+        return fail((err as Error).message);
+      }
+    },
+  );
+
+  server.registerTool(
     "run_ad_review",
     {
       title: "Run an ad-review metric filter",
