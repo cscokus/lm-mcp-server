@@ -8,10 +8,13 @@ services:
     # firewall the port to Cloudflare IP ranges.
     ports:
       - "127.0.0.1:8930:8930"
-    # Join the CRM's Docker network so the READ/PROPOSE tools can reach the CRM
-    # API by service name. Set CRM_BASE_URL=http://backend:3000 in .env.
+    # Join the CRM's network (READ/PROPOSE tools reach the CRM API by service
+    # name — CRM_BASE_URL=http://backend:3000) AND the WebPages network (the
+    # Apache ingress container proxies lm-mcp.liquidmindmedia.com to
+    # http://lm-mcp:8930 by name — see config/lm-mcp.conf).
     networks:
       - crm
+      - webpages
 
   # Optional: run the Cloudflare Tunnel as a sidecar so the origin needs no open
   # inbound ports. Create the tunnel + token in the Cloudflare Zero Trust dashboard
@@ -33,3 +36,8 @@ networks:
     # "<project>_default" — usually "liquid-mind-crm_default". VERIFY on the
     # droplet with `docker network ls` and change the name below if it differs.
     name: liquid-mind-crm_default
+  webpages:
+    external: true
+    # The LiquidMindWebPages stack's network — the Apache ingress (web) lives
+    # here. VERIFY with `docker network ls` on the droplet.
+    name: liquidmindwebpages_default
