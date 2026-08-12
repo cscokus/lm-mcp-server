@@ -25,6 +25,39 @@ There is **no EXECUTE** in v1. Nothing this server does moves money — the wors
 compromised token can do is read data and insert proposal rows a human must still
 approve. EXECUTE (`apply_approved_action`) is deliberately deferred (see Roadmap).
 
+## Attribution rule for `run_db_query` (DSP & AMG)
+
+`describe_schema` with no argument proxies to the CRM's `GET /api/db/schema`, which
+serves `Liquid-Mind-CRM/src/db/SCHEMA.md` verbatim. **That file is the schema
+contract for every agent on this server** — when the data model changes, edit it
+there (outside the `<!-- BEGIN/END GENERATED -->` markers) rather than restating
+anything here. This section exists only because the rule below is the one most
+likely to produce a confidently wrong number.
+
+`Client_DSP_Orders` and `Client_AMG_Line_Items` each carry `clientId` **and**
+`seriesASIN` as independent columns, and the two do not always agree. `seriesASIN`
+is the attribution key; `clientId` records **whose ad account the entity runs on**.
+
+```sql
+-- WRONG: credits the ad-account owner
+JOIN Client_DSP_Orders cdo ON cdo.orderId = p.orderId AND cdo.clientId = ?
+
+-- RIGHT: credits the suite owner
+JOIN Client_DSP_Orders cdo ON cdo.orderId = p.orderId
+JOIN Client_Series     cs  ON cs.seriesASIN = cdo.seriesASIN AND cs.clientId = ?
+```
+
+The LMP imprint holds all four DSP advertisers on one house client while its nine
+author-clients own the suites and hold none, so every DSP order and AMG line item
+for those series is filed under LMP. Reading `clientId` silently credits LMP with
+~$5.5k/month of DSP and ~$3.6k/month of AMG that belongs to the authors. Matching
+the two columns (`AND cs.clientId = cdo.clientId`) is worse — it drops those rows
+from the result entirely.
+
+The dedicated tools (`get_series_performance`, `get_campaign_performance`) already
+route through the corrected CRM endpoints. This applies to hand-written
+`run_db_query` SQL.
+
 ## Layout
 
 ```
