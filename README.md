@@ -34,13 +34,14 @@ there (outside the `<!-- BEGIN/END GENERATED -->` markers) rather than restating
 anything here. This section exists only because the rule below is the one most
 likely to produce a confidently wrong number.
 
-`Client_DSP_Orders` and `Client_AMG_Line_Items` each carry `clientId` **and**
-`seriesASIN` as independent columns, and the two do not always agree. `seriesASIN`
-is the attribution key; `clientId` records **whose ad account the entity runs on**.
+`Client_DSP_Orders` and `Client_AMG_Line_Items` **no longer carry `clientId`** (dropped in the CRM's `drop_slot_client_id.sql`; all four slot tables now key on
+`seriesASIN` alone). It used to hold **whose ad account the entity runs on**, which
+is a different question from who owns the series, and it went stale whenever a
+series was reassigned. `seriesASIN` is the attribution key.
 
 ```sql
--- WRONG: credits the ad-account owner
-JOIN Client_DSP_Orders cdo ON cdo.orderId = p.orderId AND cdo.clientId = ?
+-- WRONG: the column no longer exists, and credited the ad-account owner
+-- JOIN Client_DSP_Orders cdo ON cdo.orderId = p.orderId AND cdo.clientId = ?
 
 -- RIGHT: credits the suite owner
 JOIN Client_DSP_Orders cdo ON cdo.orderId = p.orderId
